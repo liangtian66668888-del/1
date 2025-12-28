@@ -79,7 +79,10 @@ python main_ShipEnv.py
 - `manager_return`：强化学习实际使用的累计回报
 - `total_return`：环境返回的总奖励
 - `length`：episode 步数（小于最大步数表示任务提前完成）
-
+### 6.1 训练demo
+```bash
+python ShipEnv.py
+```
 ---
 
 ## 7. 实验指标
