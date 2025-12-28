@@ -219,7 +219,7 @@ else:
             returns += reward
             last_allocation = allocation
         print("episode:{} total return:{} length:{}!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!".format(epoch, returns,
-                                                                                                  env.epoch))
+                                                                                                env.epoch))
         return_list.append(returns)
 
     plt.figure(figsize=(8, 6))
@@ -227,3 +227,6 @@ else:
     plt.savefig(args.model_dir + "/fewshot-return_{}.png".format(information))
     plt.figure(figsize=(8, 6))
     np.save(args.model_dir + "/fewshot-return_{}.npy".format(information), return_list)
+
+
+    # sfasfis
