@@ -73,6 +73,7 @@ else:
 if not args.evaluate:
     return_list = []
     total_return_list = []
+    task_return_list = []
     for epoch in range(args.max_epoch):
         render = (epoch % 50 == 49)
         if render:
@@ -83,6 +84,7 @@ if not args.evaluate:
         state, info = env.reset()
         returns = 0
         total_returns = 0
+        task_returns = 0
         time = 0
         avail_task = np.ones(env.task_num)
         last_allocation = [[] for _ in range(env.task_num)]
@@ -106,12 +108,15 @@ if not args.evaluate:
 
             state = next_state
             returns += reward
-            total_returns += info["total_reward"]
+            total_returns += info.get("total_reward", 0.0)
+            task_returns += info.get("task_reward", 0.0)
             last_allocation = allocation
-        print("episode:{} manager_return:{} total_return:{}  length:{}!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!".format(
-            epoch, returns, total_returns, env.epoch))
+        print(
+            "episode:{} manager_return:{} total_return:{}  length:{}!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!".format(
+                epoch, returns, total_returns, task_returns, env.epoch))
         return_list.append(returns)
         total_return_list.append(total_returns)
+        task_return_list.append(task_returns)
 
     smooth = 501
     plt.figure(figsize=(8, 6))
@@ -126,10 +131,17 @@ if not args.evaluate:
     plt.figure(figsize=(8, 6))
     plt.plot(moving_average(total_return_list, 11))
     plt.savefig(args.model_dir + "/total_return_{}.png".format(information))
+    plt.figure(figsize=(8, 6))
+    plt.plot(moving_average(task_return_list, 11))
+    plt.savefig(args.model_dir + "/task_return_{}.png".format(information))
+    plt.figure(figsize=(8, 6))
+    plt.plot(moving_average(total_return_list, 11))
+    plt.savefig(args.model_dir + "/total_return_{}.png".format(information))
     np.save(args.model_dir + "/manager_critic_loss_{}.npy".format(information), alg.manager.critic_loss_list)
     np.save(args.model_dir + "/manager_actor_loss_{}.npy".format(information), alg.manager.actor_loss_list)
     np.save(args.model_dir + "/return_{}.npy".format(information), return_list)
     np.save(args.model_dir + "/total_return_{}.npy".format(information), total_return_list)
+    np.save(args.model_dir + "/task_return_{}.npy".format(information), task_return_list)
     alg.save()
     if preassign:
         plt.figure(figsize=(8, 6))
@@ -219,7 +231,7 @@ else:
             returns += reward
             last_allocation = allocation
         print("episode:{} total return:{} length:{}!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!".format(epoch, returns,
-                                                                                                env.epoch))
+                                                                                                  env.epoch))
         return_list.append(returns)
 
     plt.figure(figsize=(8, 6))
@@ -227,6 +239,3 @@ else:
     plt.savefig(args.model_dir + "/fewshot-return_{}.png".format(information))
     plt.figure(figsize=(8, 6))
     np.save(args.model_dir + "/fewshot-return_{}.npy".format(information), return_list)
-
-
-    # sfasfis

@@ -55,7 +55,9 @@ class Allocation:
             state = next_state
             returns += reward
             action_list.append(action)
-        # NOTE: do not clip negative returns to 0; keeping the true return helps learning
+        if returns <= 0:
+            action_list = []
+            returns = 0
         if render:
             if len(self.manager.actor_loss_list) > 0:
                 print("manager{} actor loss: {}".format(task_id, self.manager.actor_loss_list[-1]),
@@ -185,7 +187,9 @@ class SelfishAllocation:
             returns += reward
             action_list.append(action)
             agent_rewards[action] = self.agent_type[action, 0]
-        # NOTE: do not clip negative returns to 0; keeping the true return helps learning
+        if returns <= 0:
+            action_list = []
+            returns = 0
             agent_rewards = np.zeros(len(self.agent_type))
         for idx in idxs:
             transition_dict = {'states': self.task_copy[task_id].copy(), 'actions': demands[idx].copy(),
@@ -304,7 +308,9 @@ class AllocationWoPre:
             state = next_state
             returns += reward
             action_list.append(action)
-        # NOTE: do not clip negative returns to 0; keeping the true return helps learning
+        if returns <= 0:
+            action_list = []
+            returns = 0
         else:
             self.avail_agent = avail_agents
         return action_list
@@ -401,7 +407,9 @@ class AllocationNormalCritic:
             state = next_state
             returns += reward
             action_list.append(action)
-        # NOTE: do not clip negative returns to 0; keeping the true return helps learning
+        if returns <= 0:
+            action_list = []
+            returns = 0
         if render:
             if len(self.manager.actor_loss_list) > 0:
                 print("manager{} actor loss: {}".format(task_id, self.manager.actor_loss_list[-1]),
@@ -512,7 +520,9 @@ class AllocationNormal:
             state = next_state
             returns += reward
             action_list.append(action)
-        # NOTE: do not clip negative returns to 0; keeping the true return helps learning
+        if returns <= 0:
+            action_list = []
+            returns = 0
         if render:
             if len(self.manager.actor_loss_list) > 0:
                 print("manager{} actor loss: {}".format(task_id, self.manager.actor_loss_list[-1]),
@@ -588,7 +598,10 @@ class ShipEnv:
         # sigma: distance scale (grid units). larger => smoother, affects farther tasks
         self.rbf_sigma = 10.0
         # scale: amplifies dense RBF reward so it doesn't get drowned out by step penalty
-        self.rbf_scale = 10.0
+        # scale applied after internal scaling
+        self.rbf_scale = 1.0
+        # internal scaling for RBF to keep episode returns in a stable range
+        self.rbf_internal_scale = 0.01
         # per-step time penalty to encourage quicker completion
         self.step_penalty = 0.01
         # if True: use dense reward sum(phi); if False: use potential-difference shaping sum(phi-phi_prev)
@@ -784,7 +797,9 @@ class ShipEnv:
             r_rbf = float(np.sum(phi - self._prev_phi))
         self._prev_phi = phi
 
-        reward = self.rbf_scale * r_rbf + total_reward - self.step_penalty
+        # scale dense shaping reward (RBF) without shrinking sparse task completion reward
+        rbf_scaled = self.rbf_scale * (self.rbf_internal_scale * r_rbf)
+        reward = rbf_scaled + total_reward - self.step_penalty
         # 构建下一状态
         state = np.concatenate([
             self.task_states.flatten(),
@@ -799,13 +814,22 @@ class ShipEnv:
         info = {
             "task_pos": task_pos,
             "agent_pos": agent_pos,
-            "task_reward": total_reward,
-            "total_reward": reward
-            ,
-            "rbf_reward": self.rbf_scale * r_rbf}
+            "total_reward": reward,  # dense + sparse (used for learning curve)
+            "task_reward": total_reward,  # sparse completion-only reward
+            "rbf_reward": rbf_scaled
+        }
 
         # 检查是否完成
-        done = self.env.done or self.current_step >= self.max_steps
+        # Termination: underlying env.done, max_steps, or all tasks cleared
+        all_tasks_cleared = (self.current_step > 0) and (not np.any(task_active)) and (len(self.env.accidents) == 0)
+        done = self.env.done or all_tasks_cleared or (self.current_step >= self.max_steps)
+        if done and all_tasks_cleared:
+            # finishing bonus encourages completing all tasks quickly
+            reward += 50.0
+            info["total_reward"] = reward
+            info["finish_bonus"] = 50.0
+        else:
+            info["finish_bonus"] = 0.0
 
         return state, reward, done, info
 
