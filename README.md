@@ -8,20 +8,7 @@ git clone https://github.com/liangtian66668888-del/ShipCode.git
 cd ShipCode
 pip install -r requirements.txt
 ```
-## 2. 问题背景
-航母舰面保障作业具有高并行性、强耦合性和强不确定性。火灾、通道阻塞、燃油泄漏、舰载机碰撞等突发事件
-往往会在短时间内扩散，并与原有保障作业形成严重资源冲突。
-
-本项目关注的问题是：
-
-> 在保障作业与特情处置作业共存的场景下，  
-> 如何在时间、空间、安全与资源多重约束条件下，  
-> **动态调度有限的特情处置资源**，  
-> 最大限度降低特情损失并减少对原保障流程的干扰。
-
----
-
-## 3. 算法方法（RDSE）
+## 2. 算法方法（RDSE）
 RDSE（Resource Dynamic Scheduling for Emergency）算法由三部分构成：
 
 ### 3.1 特情扩散预测
