@@ -4,7 +4,7 @@
 ## 1. 要求
 执行以下命令安装必要依赖。
 ```
-git clone https://github.com/liangtian66668888/ShipCode.git
+git clone https://github.com/liangtian66668888-del/ShipCode.git
 cd ShipCode
 pip install -r requirements.txt
 ```
